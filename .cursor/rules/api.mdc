@@ -1,0 +1,30 @@
+---
+description: API routes, controllers, and response conventions
+globs: routes/api.php
+---
+
+# API Conventions
+
+## Routes (`routes/api.php`)
+
+- Use **resourceful routes** and small route groups with middleware (e.g. `auth:sanctum`).
+- Prefer **controller actions** over inline closures when logic is more than a couple of lines.
+- Group by prefix or middleware; avoid a flat list of unrelated routes.
+- Urls always in plural respecting REST API standard.
+
+## Controllers
+
+- Handle **HTTP only**: validation (via Form Request or Data), status codes, and response shape.
+- Call a **service/use case** for any non-trivial work; do not put business logic in the controller.
+- Return **JSON**: use `Data` objects (or resources) for consistent, typed responses—e.g. `return SomeData::from($model)` or `SomeData::collect($collection)`.
+
+## Request / Response with Data
+
+- **Input**: Use `Data::from($request)` (or route-bound Data) for request payloads; rely on Data validation instead of duplicating rules.
+- **Output**: Return `Data` instances or collections so responses are typed and transformable (e.g. to Array/JSON or TypeScript).
+- Keep Data classes in `App\Data\`, grouped by feature or resource.
+
+## Status codes and errors
+
+- Use **appropriate HTTP status codes** (200, 201, 204, 400, 401, 403, 404, 422, 500).
+- Return **consistent error payloads** (e.g. `message`, `errors` for validation) so clients can handle them uniformly.

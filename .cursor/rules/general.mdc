@@ -1,0 +1,116 @@
+---
+alwaysApply: true
+---
+# Reglas Generales
+
+> **Contexto producto**: Este proyecto es la API backend de Intent-1. Las reglas de arquitectura a nivel raíz (multi-tenant, billing, RBAC) aplican. Este archivo complementa con convenciones técnicas de implementación.
+
+## Multi-tenancy (alineado con backend.mdc)
+
+- Todas las queries deben ser **tenant-aware**; nunca confiar en contexto implícito.
+- Usar global scopes o trait de tenant en modelos que pertenecen a un tenant.
+- Los roles del producto son: Platform Admin, Tenant Admin, Tenant Users. Mapear a nombres internos consistentes (ej. `super_admin` = Platform Admin, `administrator` = Tenant Admin).
+
+## Type Hints
+
+- Usar type hints estrictos (PHP 8.3+)
+- Tipar todos los parámetros y retornos
+- Usar tipos de unión cuando sea necesario (`string|null`)
+
+## Propiedades
+
+- Preferir readonly properties cuando sea posible
+- Usar named arguments en constructores complejos
+- Inicializar propiedades en el constructor
+
+## Facades
+
+- NO usar `DB::` facade directamente en servicios, usar modelos Eloquent
+- NO usar `Auth::` facade directamente, inyectar dependencias o usar `auth()` helper
+- Evitar facades cuando sea posible, preferir inyección de dependencias
+
+## Lógica de Negocio
+
+- Evitar lógica de negocio en controladores o modelos Eloquent
+- Mantener métodos pequeños y con responsabilidad única
+- Separar validación de entrada de validación de negocio
+
+## Constantes
+
+- Usar enums para constantes relacionadas
+- Definir constantes en clases cuando sea apropiado
+
+## Inmutabilidad
+
+- Los DTOs de Spatie Data son inmutables por defecto
+- Usar `toArray()` o `toJson()` para serialización
+- Preferir readonly properties en DTOs
+
+## Testing
+
+- Tests unitarios para servicios
+- Tests de características para endpoints HTTP
+- Ubicación: `tests/Unit/`, `tests/Feature/`
+- Mockear dependencias externas
+
+## Validación
+
+- **Validación de entrada**: Form Requests (Laravel) para reglas y documentación Scramble; Data (Spatie Laravel Data) desde `$request->validatedSnake()` para pasar datos al servicio.
+- **Validación de negocio**: en servicios (excepciones → 422).
+- Los Form Requests definen el body en camelCase; `BaseApiRequest::validatedSnake()` convierte a snake_case para los Data.
+- NO duplicar validaciones entre capas.
+
+## Estructura del Proyecto
+
+- Trabajar con la estructura existente
+- NO crear nuevas carpetas de arquitectura
+- Mantener organización clara y consistente
+- Cada entidad tiene su propia carpeta en singular dentro de cada capa
+
+## Estructura por Entidad
+
+Cada entidad tiene su propia carpeta en singular. Contracts y Services están en `app/`, no bajo `app/Http/`:
+
+```
+app/
+├── Contracts/
+│   └── User/
+│       └── UserServiceInterface.php
+├── Data/
+│   └── User/
+│       ├── UserStoreData.php
+│       └── UserUpdateData.php
+├── Models/
+│   └── User.php
+├── Services/
+│   └── User/
+│       └── UserService.php
+app/Http/
+├── Controllers/
+│   └── User/
+│       └── UserController.php
+├── Requests/
+│   └── User/
+│       ├── UserStoreRequest.php
+│       └── UserUpdateRequest.php
+└── Resources/
+    └── User/
+        └── UserResource.php
+```
+
+## Flujo Recomendado
+
+1. **Request** → Form Request (valida y documenta en Scramble).
+2. **Controller** → Crea Data con `XxxStoreData::from($request->validatedSnake())` y llama al servicio.
+3. **Service** → Recibe Data, usa modelos Eloquent, devuelve modelo o colección.
+4. **Resource** → Recibe **modelo Eloquent** (o colección) y formatea la respuesta JSON.
+5. **Response** → `new UserResource($model)` o `UserResource::collection($collection)`.
+
+## Comandos Útiles
+
+```bash
+composer lint          # Verificar código
+composer lint:fix      # Corregir código
+composer test          # Ejecutar tests
+php artisan migrate    # Ejecutar migraciones
+```

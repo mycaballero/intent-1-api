@@ -1,0 +1,55 @@
+---
+description: Describes project architecture and structure
+alwaysApply: false
+---
+Architecture:
+ - Use **DDD-style layering**:
+   - **Controllers**: only handle HTTP concerns (validation, request/response, status codes).
+   - **Services / Use Cases**: contain application/business logic. Keep them framework-agnostic where reasonable.
+   - **Contracts / Interfaces**: define boundaries (e.g. repositories, domain services). Prefer coding against interfaces.
+ - Keep **Eloquent models** thin:
+   - Only simple relationships, casts, and small helper accessors/scopes.
+   - Avoid putting business rules or multi-step workflows directly on models.
+ - Prefer **dependency injection** over facades inside domain/services. Facades are acceptable in controllers and infrastructure.
+
+HTTP & API:
+ - Prefer **Laravel Form Requests** for validation and authorization rules.
+ - Controllers should:
+   - Call a dedicated service/use-case class for any non-trivial work.
+   - Return typed JSON resources / data arrays (no view rendering in `routes/api.php`).
+ - Keep `routes/api.php` focused on **resourceful routes** and small route groups with middleware.
+
+Data objects (`spatie/laravel-data`):
+ - Use **Data classes** to model input/output DTOs:
+   - Replace / complement Form Requests with `Data` objects for complex request payloads.
+   - Replace API Resources/transformers with `Data` objects for consistent, typed responses.
+ - Define `Data` classes in a dedicated namespace (e.g. `App\\Data\\`), grouped by bounded context/feature.
+ - Prefer:
+   - Controller → `Data::from(Request)` (or route-resolved `Data`) → Service → `Data`/collection as return type.
+   - Use built-in validation on `Data` objects instead of duplicating rules.
+ - When frontends need TypeScript types, generate them from `Data` classes instead of hand-writing interfaces.
+
+Testing:
+ - Use **feature tests** for HTTP flows and endpoints.
+ - Use **unit tests** for services, domain logic, and helpers.
+ - When possible, test business rules via services instead of hitting controllers directly.
+
+Code style:
+ - Follow **Laravel 12 conventions** (PSR-12, snake_case DB columns, StudlyCase models, camelCase methods).
+ - Use **early returns** to reduce nesting.
+ - Prefer **named methods** over long closures in routes when logic is more than a couple of lines.
+
+Roles and permissions (`spatie/laravel-permission`):
+ - Use **roles** and **permissions** for authorization; avoid hard-coding role names in business logic where possible.
+ - Assign roles to users via `$user->assignRole('role_name')`; check with `$user->hasRole('role_name')` or `$user->can('permission')`.
+ - Define roles and permissions in seeders or a dedicated migration; keep role names consistent (e.g. `super_admin`, `administrator`).
+ - Use **middleware** (`role:super_admin`) or **policies** to protect routes and actions; prefer `$user->can()` in services over raw role checks when permissions exist.
+ - Rely on the package's **cache** for permission checks in production; clear cache when roles/permissions change.
+
+General:
+ - Keep configuration and environment-specific values in `.env` / `config/*.php`, not hard-coded in code.
+ - When adding new features, think in terms of:
+   - HTTP layer (controller + requests + resources),
+   - Application layer (services / use cases),
+   - Domain layer (entities, value objects, rules),
+   - Infrastructure (Eloquent models, repositories, external integrations).

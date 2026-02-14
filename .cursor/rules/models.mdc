@@ -1,0 +1,70 @@
+---
+description: Convenciones para modelos Eloquent
+globs: app/Models/**/*.php
+alwaysApply: false
+---
+# Modelos Eloquent
+
+## Ubicación
+`app/Models/`
+
+## Responsabilidades
+
+- Solo para persistencia
+- Mapear tablas de base de datos
+- Definir relaciones entre modelos
+- Casts y mutators básicos
+
+## Convenciones
+
+- Nombre: PascalCase singular (ej: `User`, `Order`)
+- Extender de `Illuminate\Database\Eloquent\Model`
+- Una clase por tabla
+
+## Estructura
+
+```php
+class User extends Model {
+    protected $fillable = ['email', 'name'];
+    
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+    
+    public function orders(): HasMany {
+        return $this->hasMany(Order::class);
+    }
+}
+```
+
+## Reglas
+
+- NO contener lógica de negocio compleja
+- La lógica de negocio va en servicios
+- Solo métodos de acceso a datos básicos
+- Definir relaciones cuando sea necesario
+- Usar `$fillable` o `$guarded` para protección masiva
+- Definir casts para tipos de datos complejos
+- NO usar scopes complejos con lógica de negocio
+
+## Relaciones
+
+```php
+public function orders(): HasMany {
+    return $this->hasMany(Order::class);
+}
+```
+
+## Casts
+
+```php
+protected $casts = [
+    'email_verified_at' => 'datetime',
+    'is_active' => 'boolean',
+    'metadata' => 'array',
+];
+```
+
+## Accesors y Mutators
+
+Usar solo para transformaciones simples de datos, no para lógica de negocio.

@@ -1,0 +1,95 @@
+---
+description: Convenciones para DTOs con Spatie Laravel Data
+globs: app/Data/**/*.php, app/Http/DTO/**/*.php
+alwaysApply: false
+---
+# DTOs (Data Transfer Objects)
+
+## Ubicación
+`app/Data/{Entity}/` (ej: `app/Data/Procedure/`, `app/Data/Patient/`). Alternativa legacy: `app/Http/DTO/{Entity}/`
+
+## Librería
+Usar **Spatie Laravel Data** para todos los DTOs
+
+## Convenciones
+
+- Cada entidad tiene su propia carpeta en singular (ej: `User`, `Order`, `Product`)
+- Nombre: PascalCase con sufijo `Data` o `DTO` (ej: `UserStoreData`, `ProcedureUpdateData`, `CreateUserDTO`)
+- Estructura: `app/Data/{Entity}/{Action}Data.php` (ej: `ProcedureStoreData`, `ProcedureUpdateData`, `PatientStoreData`)
+- Extender de `Spatie\LaravelData\Data`
+- Propiedades readonly para inmutabilidad
+
+## Estructura de directorios
+
+```
+app/Data/
+├── Procedure/
+│   ├── ProcedureStoreData.php
+│   ├── ProcedureUpdateData.php
+│   └── ProcedureRelatedItemData.php
+├── Patient/
+│   └── PatientStoreData.php
+```
+
+## Estructura
+
+```php
+namespace App\Data\User;
+
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Attributes\Validation\Email;
+use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Attributes\Validation\StringType;
+use Spatie\LaravelData\Attributes\Validation\Max;
+
+class UserStoreData extends Data {
+    public function __construct(
+        #[Required, Email]
+        public readonly string $email,
+        
+        #[Required, StringType, Max(255)]
+        public readonly string $name
+    ) {}
+    
+    public static function fromModel(User $user): self {
+        return new self(
+            email: $user->email,
+            name: $user->name
+        );
+    }
+}
+```
+
+## Creación desde request (en el controlador)
+
+```php
+// En store/update: el Form Request ya validó. Usar validatedSnake() para convertir camelCase → snake_case.
+$data = UserStoreData::from($request->validatedSnake());
+$data = ProcedureStoreData::from($request->validatedSnake());
+```
+
+Los Form Requests extienden `BaseApiRequest`, que define `validatedSnake()` (keys en snake_case para los Data).
+
+## Validación y relación con Form Requests
+
+- La **validación de la request** se hace en el **Form Request** (reglas Laravel en `rules()`). Scramble usa esas reglas para documentar el body en `/docs/api`.
+- El controlador pasa al Data **solo datos ya validados**: `XxxStoreData::from($request->validatedSnake())`.
+- Los DTOs pueden seguir usando atributos de validación de Spatie Data para consistencia de tipos y reglas de dominio; si la request ya fue validada por el Form Request, el DTO recibe datos en forma correcta.
+- Si la validación falla en el Form Request, Laravel devuelve 422 antes de llegar al DTO. El servicio puede seguir lanzando `InvalidArgumentException` para reglas de negocio (ej: “falta patient o patient_id”) y el controlador las convierte en 422.
+
+## Serialización
+
+```php
+$dto->toArray();
+$dto->toJson();
+```
+
+## Reglas
+
+- Todos los DTOs deben extender de `Spatie\LaravelData\Data`
+- **En endpoints POST/PUT**: crear Data desde `$request->validatedSnake()` en el controlador (el Form Request ya validó; validatedSnake convierte a snake_case).
+- Usar atributos de validación de Spatie Data en propiedades cuando aporten reglas de dominio o tipos.
+- Propiedades readonly cuando sea posible para inmutabilidad.
+- Métodos estáticos `fromModel()` cuando sea necesario convertir desde modelos Eloquent.
+- No contener lógica de negocio; el DTO es estructura + mapeo/normalización (ej: arrays anidados a sub-DTOs).
+- Firma `from(mixed ...$payloads): static` si se usa un solo payload: `$payload = $payloads[0] ?? [];` y luego `parent::from($payload)`.

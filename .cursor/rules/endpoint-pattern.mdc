@@ -1,0 +1,26 @@
+---
+description: Patrón de endpoints (index primero, IndexRequest, IndexData, Service→Collection, Resource::collection)
+globs: app/Http/Controllers/**/*.php, app/Http/Requests/**/*.php, app/Http/Resources/**/*.php, app/Services/**/*.php, app/Data/**/*.php, routes/api.php
+alwaysApply: false
+---
+
+# Patrón de endpoints (Procedure como referencia)
+
+## Rutas
+- Dentro del grupo del recurso: rutas específicas primero (ej. `GET statuses`), luego `GET /` (index), `POST /`, `PUT {id}`.
+
+## Controlador
+- **Orden**: método `index` primero. Inyectar `{Entity}ServiceInterface` en el constructor.
+- **Index**: type-hint `{Entity}IndexRequest`; retornar `response()->json({Entity}Resource::collection($this->service->index({Entity}IndexData::from($request))))`.
+
+## Index: Request, Data, Service, Resource
+- **Request**: `app/Http/Requests/{Entity}/{Entity}IndexRequest.php` con `rules()` para filtros/orden (date, search, status, sort_by, sort_direction según necesidad).
+- **Data**: `app/Data/{Entity}/{Entity}IndexData.php` (Spatie Data), propiedades nullable alineadas al request. En controlador: `{Entity}IndexData::from($request)`.
+- **Service**: método `index({Entity}IndexData $data): \Illuminate\Database\Eloquent\Collection`; usar Eloquent (`Model::query()->with()->when()->whereHas()->orderBy()->get()`), devolver **Collection**, no array.
+- **Resource**: solo campos necesarios; relaciones con sus Resources (ej. `PatientResource`); enums/estados con Resource propio (ej. `ProcedureStatusResource`). Listado: `{Entity}Resource::collection($items)`.
+
+## Eloquent
+- Preferir `Model::query()`, `with()`, `when()`, `whereHas()`/`orWhereHas()`, `orderBy()`, `get()`. No `DB::table()` ni convertir resultado a array si el contrato es Collection.
+
+## Aplicación
+- Al añadir o refactorizar un endpoint de listado (index), seguir este flujo modelo por modelo. Consultar la skill `eloquent-laravel-api` para detalle y checklist.

@@ -1,0 +1,69 @@
+---
+description: Convenciones para Service Providers y bindings
+globs: app/Providers/**/*.php
+alwaysApply: false
+---
+# Service Providers
+
+## Ubicación
+`app/Providers/`
+
+## Responsabilidades
+
+- Registrar bindings de interfaces a implementaciones
+- Configurar servicios de la aplicación
+- Registrar eventos y listeners
+
+## Convenciones
+
+- Nombre: PascalCase con sufijo `ServiceProvider` (ej: `AppServiceProvider`)
+- Registrar en `bootstrap/providers.php`
+
+## Estructura
+
+```php
+// En AppServiceProvider o ServicesProvider
+public function register(): void {
+    $this->app->bind(
+        \App\Contracts\User\UserServiceInterface::class,
+        \App\Services\User\UserService::class
+    );
+}
+```
+
+## Registro de Bindings
+
+```php
+$this->app->bind(
+    \App\Contracts\User\UserServiceInterface::class,
+    \App\Services\User\UserService::class
+);
+
+$this->app->singleton(
+    \App\Contracts\User\UserServiceInterface::class,
+    \App\Services\User\UserService::class
+);
+```
+
+## Convenciones de Nombres
+
+- Contracts: `UserServiceInterface` (ubicado en `app/Contracts/{Entity}/UserServiceInterface.php`)
+- Implementaciones: `UserService` (ubicado en `app/Services/{Entity}/UserService.php`)
+- El Contract termina con `Interface`, la implementación no
+- NO usar carpeta `Impl`, las implementaciones van directamente en `Services/{Entity}/`
+
+## Reglas
+
+- Registrar bindings en el método `register()`
+- Configuración general en `AppServiceProvider`
+- Crear providers específicos cuando sea necesario
+- Preferir bindings de interfaces sobre implementaciones concretas
+- Usar `singleton()` cuando el servicio debe ser único
+
+## Registro en bootstrap/providers.php
+
+```php
+return [
+    App\Providers\AppServiceProvider::class,
+];
+```

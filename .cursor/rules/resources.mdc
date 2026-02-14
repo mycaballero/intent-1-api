@@ -1,0 +1,119 @@
+---
+description: Convenciones para API Resources (transformación de respuestas)
+  globs: app/Http/Resources/**/*.php
+alwaysApply: false
+---
+# API Resources
+
+## Ubicación
+`app/Http/Resources/{Entity}/` (ej: `app/Http/Resources/User/`)
+
+## Responsabilidades
+
+- Transformar **modelos Eloquent** (o colecciones) a respuestas API
+- Formatear datos para el cliente
+- Controlar qué datos se exponen
+- **Obligatorio usar Resources en todas las respuestas de controladores**
+
+## Convenciones
+
+- Cada entidad tiene su propia carpeta en singular (ej: `User`, `Order`, `Product`)
+- Nombre: PascalCase con sufijo `Resource` (ej: `UserResource`)
+- Estructura: `app/Http/Resources/{Entity}/{Entity}Resource.php`
+- Extender de `Illuminate\Http\Resources\JsonResource`
+- Recibir **modelos Eloquent** (o colecciones/arrays) como recurso; los servicios devuelven modelos, no DTOs
+
+## Estructura de Directorios
+
+```
+app/Http/Resources/
+├── User/
+│   └── UserResource.php
+├── Order/
+│   └── OrderResource.php
+```
+
+## Estructura
+
+```php
+namespace App\Http\Resources\User;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class UserResource extends JsonResource {
+    public function toArray(Request $request): array {
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'name' => $this->name,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
+    }
+}
+```
+
+**Nota:** 
+- `$this->resource` contiene el **modelo Eloquent** (o array) pasado al Resource
+- Acceder a propiedades con `$this->id`, `$this->name`, etc., o `$this->resource->relation`
+
+## Uso
+
+```php
+use App\Http\Resources\User\UserResource;
+
+$user = $userService->findById($id);
+
+return new UserResource($user);
+return UserResource::collection($users);
+return response()->json(new UserResource($user), 201);
+```
+
+**Importante:** En este proyecto los Resources reciben **modelos Eloquent** (o colecciones), no DTOs. El servicio devuelve el modelo y el controlador lo envuelve en el Resource.
+
+## Colecciones
+
+```php
+use App\Http\Resources\User\UserResource;
+
+return UserResource::collection($userDTOs);
+
+class UserCollection extends ResourceCollection {
+    public function toArray(Request $request): array {
+        return [
+            'data' => $this->collection,
+            'meta' => [
+                'total' => $this->collection->count(),
+            ],
+        ];
+    }
+}
+```
+
+**Nota:** Las colecciones también deben estar en la carpeta de la entidad si se crean.
+
+## Reglas
+
+- **Obligatorio usar Resources en todas las respuestas de controladores**
+- Transformar solo datos necesarios para la API
+- NO incluir lógica de negocio
+- Formatear fechas y tipos de datos apropiadamente
+- Usar `$this->resource` para acceder al modelo original
+- Retornar arrays consistentes
+- Los Resources reciben **modelos Eloquent** (o colecciones)
+- NO devolver `$model->toArray()` en controladores; usar Resources
+
+## Condicionales
+
+```php
+public function toArray(Request $request): array {
+    return [
+        'id' => $this->id,
+        'email' => $this->email,
+        'profile' => $this->when($this->relationLoaded('profile'), function () {
+            return new ProfileResource($this->profile);
+        }),
+    ];
+}
+```

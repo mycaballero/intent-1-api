@@ -1,0 +1,150 @@
+---
+description: Convenciones para servicios y lógica de negocio
+globs: app/Services/**/*.php
+alwaysApply: false
+---
+# Servicios
+
+## Ubicación
+- Contracts (Interfaces): `app/Contracts/{Entity}/` (ej: `app/Contracts/User/`)
+- Implementaciones: `app/Services/{Entity}/` (ej: `app/Services/User/`)
+
+## Responsabilidades
+
+- Contener lógica de negocio y casos de uso
+- Orquestar operaciones complejas
+- Validar reglas de negocio
+- Acceder directamente a modelos Eloquent
+- Coordinar entre servicios cuando sea necesario
+
+## Convenciones
+
+- Cada entidad tiene su propia carpeta en singular (ej: `User`, `Order`, `Product`)
+- Contracts: PascalCase singular con sufijo `ServiceInterface` (ej: `UserServiceInterface`, `OrderServiceInterface`)
+- Implementaciones: Mismo nombre base que el Contract sin `Interface` (ej: `UserService`, `OrderService`)
+- Estructura: `app/Contracts/{Entity}/{Entity}ServiceInterface.php` y `app/Services/{Entity}/{Entity}Service.php`
+- Un servicio por entidad o contexto de negocio
+- Métodos públicos para casos de uso
+
+## Estructura de Contract (Interface)
+
+```php
+namespace App\Contracts\User;
+
+use App\Data\User\UserStoreData;
+use App\Data\User\UserUpdateData;
+use App\Models\User;
+
+interface UserServiceInterface {
+    public function create(UserStoreData $data): User;
+    public function findById(int $id): ?User;
+    public function update(int $id, UserUpdateData $data): ?User;
+    public function delete(int $id): void;
+}
+```
+
+## Estructura de Implementación
+
+```php
+namespace App\Services\User;
+
+use App\Contracts\User\UserServiceInterface;
+use App\Data\User\UserStoreData;
+use App\Data\User\UserUpdateData;
+use App\Models\User;
+
+class UserService implements UserServiceInterface {
+    public function create(UserStoreData $data): User {
+        $this->validateUniqueEmail($data->email);
+        $user = new User(['email' => $data->email, 'name' => $data->name]);
+        $user->save();
+        return $user;
+    }
+    
+    public function findById(int $id): ?User {
+        return User::find($id);
+    }
+    
+    public function update(int $id, UserUpdateData $data): ?User {
+        $user = User::find($id);
+        if (!$user) return null;
+        if ($data->name !== null) $user->name = $data->name;
+        if ($data->email !== null) $user->email = $data->email;
+        $user->save();
+        return $user;
+    }
+    
+    public function delete(int $id): void {
+        User::find($id)?->delete();
+    }
+    
+    private function validateUniqueEmail(string $email): void {
+        if (User::where('email', $email)->exists()) {
+            throw new \InvalidArgumentException("Email already exists");
+        }
+    }
+}
+```
+
+## Reglas
+
+- Acceder directamente a modelos Eloquent
+- Recibir Data (Spatie) como entrada; devolver modelos o colecciones Eloquent
+- Validar reglas de negocio antes de persistir
+- Lanzar excepciones cuando sea necesario
+- NO usar facades directamente (`DB::`, `Auth::`, etc.)
+- Mantener métodos pequeños y con responsabilidad única
+- Métodos privados para lógica interna
+- Usar type hints estrictos
+
+## Estructura de Directorios
+
+```
+app/
+├── Contracts/
+│   └── User/
+│       └── UserServiceInterface.php
+└── Services/
+    └── User/
+        └── UserService.php
+```
+
+## Registro en Service Provider
+
+Los bindings se registran en `app/Providers/ServicesProvider.php` (o similar):
+
+```php
+$this->app->bind(
+    \App\Contracts\User\UserServiceInterface::class,
+    \App\Services\User\UserService::class
+);
+```
+
+## Inyección de Dependencias
+
+- Inyectar Contracts (interfaces) en el constructor
+- Los controladores inyectan el Contract, no la implementación
+- Usar readonly properties cuando sea posible
+- Laravel resuelve la implementación desde el Service Provider
+
+## Ejemplo de Uso en Controller
+
+```php
+namespace App\Http\Controllers\User;
+
+use App\Contracts\User\UserServiceInterface;
+use App\Http\Controllers\Controller;
+
+class UserController extends Controller {
+    public function __construct(
+        private readonly UserServiceInterface $userService
+    ) {}
+}
+```
+
+## Testing
+
+- Los servicios deben ser fácilmente testeables
+- Mockear modelos Eloquent en tests unitarios cuando sea necesario
+- Mockear Contracts en tests de controladores
+- Tests unitarios para lógica de negocio

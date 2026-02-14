@@ -1,0 +1,112 @@
+---
+description: Convenciones y patrones para controladores Laravel (API)
+globs: app/Http/Controllers/**/*.php
+alwaysApply: false
+---
+# Controladores
+
+## Ubicación
+`app/Http/Controllers/{Entity}/` (ej: `app/Http/Controllers/User/`)
+
+## Responsabilidades
+
+- Mantener delgados, solo coordinan
+- Delegar lógica a servicios
+- Usar **Form Request** en POST/PUT para validación de entrada y documentación en Scramble
+- Crear Data desde `$request->validatedSnake()` y pasarlos al servicio (los Form Requests usan camelCase; los Data esperan snake_case)
+- Usar Resources para formatear respuestas
+
+## Convenciones
+
+- Cada entidad tiene su propia carpeta en singular (ej: `User`, `Order`, `Product`)
+- Nombre: PascalCase con sufijo `Controller` (ej: `UserController`)
+- Estructura: `app/Http/Controllers/{Entity}/{Entity}Controller.php`
+- Extender de `App\Http\Controllers\Controller`
+- Inyectar servicios en el constructor
+
+## Estructura de Directorios
+
+```
+app/Http/Controllers/
+├── User/
+│   └── UserController.php
+├── Order/
+│   └── OrderController.php
+```
+
+## Estructura
+
+```php
+namespace App\Http\Controllers\User;
+
+use App\Http\Controllers\Controller;
+use App\Contracts\User\UserServiceInterface;
+use App\Data\User\UserStoreData;
+use App\Http\Requests\User\UserStoreRequest;
+use App\Http\Resources\User\UserResource;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class UserController extends Controller {
+    public function __construct(
+        private UserServiceInterface $userService
+    ) {}
+    
+    public function index(Request $request): JsonResponse {
+        $users = $this->userService->getAll();
+        
+        return response()->json(
+            UserResource::collection($users)
+        );
+    }
+    
+    public function store(UserStoreRequest $request): JsonResponse {
+        $data = UserStoreData::from($request->validatedSnake());
+        $user = $this->userService->create($data);
+        
+        return response()->json(
+            new UserResource($user),
+            201
+        );
+    }
+    
+    public function show(int $id): JsonResponse {
+        $userDTO = $this->userService->findById($id);
+        
+        if (!$userDTO) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        
+        return response()->json(
+            new UserResource($userDTO)
+        );
+    }
+}
+```
+
+## Form Requests (POST / PUT)
+
+- Crear un Form Request por acción de escritura: `{Entity}StoreRequest`, `{Entity}UpdateRequest`.
+- Ubicación: `app/Http/Requests/{Entity}/`. Extender `BaseApiRequest` para tener `validatedSnake()`.
+- En el controlador, type-hint el Form Request en `store()` y `update()`; usar **`$request->validatedSnake()`** para construir el Data (convierte claves camelCase → snake_case para Spatie Data).
+- Las reglas del Form Request definen el body en **camelCase**; Scramble documenta ese body en `/docs/api`.
+- Cuando el negocio permita varias vías (ej: `patient.id` **o** bloque `patient`), usar validación condicional (ej: `Rule::when(...)`) para no rechazar requests válidos.
+
+## Reglas
+
+- NO contener lógica de negocio
+- NO usar facades directamente (`DB::`, `Auth::`, etc.)
+- Usar type hints estrictos
+- Retornar `JsonResponse` para APIs
+- Usar códigos HTTP apropiados (201 para creación, 200 para éxito, 204 para update sin body, etc.)
+- **SIEMPRE usar Resources para formatear respuestas**
+- Usar `new UserResource($item)` para un solo recurso
+- Usar `UserResource::collection($items)` para colecciones
+- NO usar `$item->toArray()` directamente en las respuestas
+
+## Flujo típico (store/update)
+
+1. Recibir **Form Request** (Laravel valida con `rules()` y Scramble usa esas reglas para la doc).
+2. Crear Data desde `$request->validatedSnake()` y pasarlo al servicio.
+3. El servicio aplica lógica de negocio; puede lanzar `InvalidArgumentException` (ej: “patient_id no existe y no hay patient”) → responder 422.
+4. Retornar respuesta JSON con `Resource` o `Resource::collection()`.
