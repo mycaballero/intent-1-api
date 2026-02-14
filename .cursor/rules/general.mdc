@@ -19,7 +19,7 @@ alwaysApply: true
 
 ## Propiedades
 
-- Preferir readonly properties cuando sea posible
+- **No usar `readonly`** en propiedades de constructores (ni en controladores, servicios, DTOs ni notificaciones).
 - Usar named arguments en constructores complejos
 - Inicializar propiedades en el constructor
 
@@ -42,9 +42,9 @@ alwaysApply: true
 
 ## Inmutabilidad
 
-- Los DTOs de Spatie Data son inmutables por defecto
+- Los DTOs de Spatie Data se tratan como inmutables en uso (no reasignar propiedades).
 - Usar `toArray()` o `toJson()` para serialización
-- Preferir readonly properties en DTOs
+- No usar `readonly` en propiedades de DTOs (convención del proyecto).
 
 ## Testing
 

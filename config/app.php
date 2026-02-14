@@ -56,6 +56,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL (Intent-1 web / app)
+    |--------------------------------------------------------------------------
+    |
+    | Used for password reset links in emails. User is redirected here with
+    | token and email; frontend then calls API POST /api/auth/reset-password.
+    |
+    */
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
@@ -78,9 +89,20 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'es'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supported locales for API (per-request language)
+    |--------------------------------------------------------------------------
+    |
+    | Request can send Accept-Language, X-Locale header or ?lang= query. If the
+    | value is not in this list, fallback_locale is used.
+    |
+    */
+    'supported_locales' => ['es', 'en'],
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 

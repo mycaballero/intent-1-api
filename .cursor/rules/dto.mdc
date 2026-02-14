@@ -17,7 +17,7 @@ Usar **Spatie Laravel Data** para todos los DTOs
 - Nombre: PascalCase con sufijo `Data` o `DTO` (ej: `UserStoreData`, `ProcedureUpdateData`, `CreateUserDTO`)
 - Estructura: `app/Data/{Entity}/{Action}Data.php` (ej: `ProcedureStoreData`, `ProcedureUpdateData`, `PatientStoreData`)
 - Extender de `Spatie\LaravelData\Data`
-- Propiedades readonly para inmutabilidad
+- No usar `readonly` en propiedades del constructor (convención del proyecto).
 
 ## Estructura de directorios
 
@@ -45,10 +45,10 @@ use Spatie\LaravelData\Attributes\Validation\Max;
 class UserStoreData extends Data {
     public function __construct(
         #[Required, Email]
-        public readonly string $email,
+        public string $email,
         
         #[Required, StringType, Max(255)]
-        public readonly string $name
+        public string $name
     ) {}
     
     public static function fromModel(User $user): self {
@@ -89,7 +89,7 @@ $dto->toJson();
 - Todos los DTOs deben extender de `Spatie\LaravelData\Data`
 - **En endpoints POST/PUT**: crear Data desde `$request->validatedSnake()` en el controlador (el Form Request ya validó; validatedSnake convierte a snake_case).
 - Usar atributos de validación de Spatie Data en propiedades cuando aporten reglas de dominio o tipos.
-- Propiedades readonly cuando sea posible para inmutabilidad.
+- No usar `readonly` en propiedades (convención del proyecto).
 - Métodos estáticos `fromModel()` cuando sea necesario convertir desde modelos Eloquent.
 - No contener lógica de negocio; el DTO es estructura + mapeo/normalización (ej: arrays anidados a sub-DTOs).
 - Firma `from(mixed ...$payloads): static` si se usa un solo payload: `$payload = $payloads[0] ?? [];` y luego `parent::from($payload)`.

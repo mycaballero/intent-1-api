@@ -33,7 +33,7 @@ Patrón de referencia: **Procedure** (index, store, update). Aplicar modelo por 
 - **Index**:
   - Type-hint del **Form Request** del listado: `{Entity}IndexRequest`.
   - Respuesta: `response()->json({Entity}Resource::collection($this->service->index({Entity}IndexData::from($request))))`.
-- **Inyección**: constructor con `private readonly {Entity}ServiceInterface $service`.
+- **Inyección**: constructor con `private {Entity}ServiceInterface $service` (no usar `readonly`).
 - Solo HTTP: validación vía Form Request, códigos de estado, forma de la respuesta. Sin lógica de negocio.
 
 ## 4. Form Request para index

@@ -124,7 +124,7 @@ $this->app->bind(
 
 - Inyectar Contracts (interfaces) en el constructor
 - Los controladores inyectan el Contract, no la implementación
-- Usar readonly properties cuando sea posible
+- No usar `readonly` en propiedades del constructor (convención del proyecto).
 - Laravel resuelve la implementación desde el Service Provider
 
 ## Ejemplo de Uso en Controller
@@ -137,7 +137,7 @@ use App\Http\Controllers\Controller;
 
 class UserController extends Controller {
     public function __construct(
-        private readonly UserServiceInterface $userService
+        private UserServiceInterface $userService
     ) {}
 }
 ```
