@@ -25,4 +25,9 @@ interface AuthServiceInterface
      * Reset password with token. Returns status key (e.g. Password::PASSWORD_RESET).
      */
     public function resetPassword(ResetPasswordData $data): string;
+
+    /**
+     * Revoke the current access token for the user (logout).
+     */
+    public function logout(User $user): void;
 }

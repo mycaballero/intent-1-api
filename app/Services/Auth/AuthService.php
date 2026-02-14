@@ -7,6 +7,7 @@ use App\Contracts\User\UserRepositoryInterface;
 use App\Data\Auth\ForgotPasswordData;
 use App\Data\Auth\LoginData;
 use App\Data\Auth\ResetPasswordData;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
@@ -58,5 +59,10 @@ class AuthService implements AuthServiceInterface
                 ])->save();
             }
         );
+    }
+
+    public function logout(User $user): void
+    {
+        $user->currentAccessToken()->delete();
     }
 }

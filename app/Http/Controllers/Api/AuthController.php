@@ -12,6 +12,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\User\UserResource;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
@@ -70,6 +71,18 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => __($status),
+        ]);
+    }
+
+    /**
+     * Logout: revoke current access token. Requires Authorization: Bearer {token}.
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $this->authService->logout($request->user());
+
+        return response()->json([
+            'message' => __('auth.logged_out'),
         ]);
     }
 }
