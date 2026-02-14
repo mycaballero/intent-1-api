@@ -38,20 +38,15 @@ class AuthController extends Controller
 
     /**
      * Forgot password: send reset link to email.
+     * Always returns 200 with the same message to avoid revealing whether the email exists.
      */
     public function sendResetLink(ForgotPasswordRequest $request): JsonResponse
     {
         $data = ForgotPasswordData::from($request->validatedSnake());
-        $status = $this->authService->sendResetLink($data);
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => __($status),
-            ], 422);
-        }
+        $this->authService->sendResetLink($data);
 
         return response()->json([
-            'message' => __($status),
+            'message' => __('passwords.sent'),
         ]);
     }
 
